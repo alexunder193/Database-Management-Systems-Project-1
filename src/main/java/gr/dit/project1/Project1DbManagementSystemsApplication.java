@@ -16,7 +16,7 @@ public class Project1DbManagementSystemsApplication {
   @Bean
   public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
     return args -> {
-      fillTablesService.fillTables();
+      fillTablesService.parseDataXceiver();
     };
   }
 
