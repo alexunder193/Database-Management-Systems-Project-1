@@ -14,14 +14,40 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import gr.dit.project1.entities.AccessLog;
+import gr.dit.project1.entities.Block;
+import gr.dit.project1.entities.Destination;
+import gr.dit.project1.entities.Request;
+import gr.dit.project1.entities.RequestType;
+import gr.dit.project1.repositories.AccessLogRepository;
+import gr.dit.project1.repositories.BlockRepository;
+import gr.dit.project1.repositories.DestinationRepository;
+import gr.dit.project1.repositories.RequestRepository;
+import gr.dit.project1.repositories.RequestTypeRepository;
 
 @Service
 public class FillTablesService {
 
   static final Logger logger = LoggerFactory.getLogger(FillTablesService.class);
 
+  private final RequestRepository requestRepository;
+  private final AccessLogRepository accessLogRepository;
+  private final DestinationRepository destinationRepository;
+  private final BlockRepository blockRepository;
+  private final RequestTypeRepository requestTypeRepository;
+
+  public FillTablesService(RequestRepository requestRepository,
+      AccessLogRepository accessLogRepository, DestinationRepository destinationRepository,
+      BlockRepository blockRepository, RequestTypeRepository requestTypeRepository) {
+    this.requestRepository = requestRepository;
+    this.accessLogRepository = accessLogRepository;
+    this.destinationRepository = destinationRepository;
+    this.blockRepository = blockRepository;
+    this.requestTypeRepository = requestTypeRepository;
+  }
+
   public void parseAccessLog() throws IOException {
-    ClassPathResource classPathResource = new ClassPathResource("access.log");
+    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
 
@@ -29,131 +55,157 @@ public class FillTablesService {
       int val = 1;
       while ((strLine = br.readLine()) != null) {
         String[] data = strLine.split(" ");
-        System.out.println("length: " + data.length);
+        Request request = new Request();
+        AccessLog accessLog = new AccessLog();
+        // System.out.println("length: " + data.length);
         if (data[7].equals("")) {
-        	List<String> list = new ArrayList<String>(Arrays.asList(data));
-        	//List<String> list = Arrays.asList(data);
-        	list.remove(7);
-        	Object[]  data1 = list.toArray();
-            int length = data1.length;
-            data1[11] = ((String) data1[11]).substring(1);
-            data1[length - 2] = ((String) data1[length - 2]).substring(0, ((String) data1[length - 2]).length() - 1);
+          List<String> list = new ArrayList<String>(Arrays.asList(data));
+          list.remove(7);
+          Object[] data1 = list.toArray();
+          int length = data1.length;
+          data1[11] = ((String) data1[11]).substring(1);
+          data1[length - 2] =
+              ((String) data1[length - 2]).substring(0, ((String) data1[length - 2]).length() - 1);
 
-            String ipAddress = (String) data1[0];
-            System.out.println(ipAddress);
-            String userId = (String) data1[1];
-            if (userId.equals("-")) {
-              // saveAndFlush null value
+          String ipAddress = (String) data1[0];
+          request.setSourceIp(ipAddress);
+          // System.out.println(ipAddress);
+          String userId = (String) data1[2];
+          if (userId.equals("-")) {
+            accessLog.setUserId(null);
+          } else {
+            // System.out.println(userId);
+            accessLog.setUserId(userId);
+          }
+          String stringTimestamp =
+              strLine.substring(strLine.indexOf("[") + 1, strLine.indexOf("]"));
+          LocalDateTime timestamp = stringToLocalDateTimeAccessLog(stringTimestamp);
+          request.setTimestamp(timestamp);
+          // System.out.println(timestamp);
+          String method = (String) data1[5];
+          method = method.substring(1);
+          accessLog.setMethod(method);
+          // System.out.println(method);
+          String resource = (String) data1[6];
+          accessLog.setResource(resource);
+          // System.out.println(resource);
+          if (data1[8].equals("-")) {
+            accessLog.setResponse(null);
+          } else {
+            Long responseStatus = Long.parseLong((String) data1[8]);
+            accessLog.setResponse(responseStatus);
+            // System.out.println(responseStatus);
+          }
+          if (data1[9].equals("-")) {
+            accessLog.setResponseSize(null);
+          } else {
+            Long responseSize = Long.parseLong((String) data1[9]);
+            accessLog.setResponseSize(responseSize);
+            // System.out.println(responseSize);
+          }
+          String referer = (String) data1[10];
+          referer = referer.substring(1);
+          referer = referer.substring(0, referer.length() - 1);
+          if (referer.equals("-")) {
+            accessLog.setReferer(null);
+          } else {
+            accessLog.setReferer(referer);
+            // System.out.println(referer);
+          }
+          StringBuilder userAgentBuilder = new StringBuilder();
+          for (int i = 11; i < data1.length - 1; i++) {
+            userAgentBuilder.append(data1[i]);
+            if (i != data1.length - 2) {
+              userAgentBuilder.append(" ");
             }
-            System.out.println(userId);
-            String stringTimestamp = strLine.substring(strLine.indexOf("[") + 1, strLine.indexOf("]"));
-            LocalDateTime timestamp = stringToLocalDateTimeAccessLog(stringTimestamp);
-            System.out.println(timestamp);
-            String method = (String) data1[5];
-            method = method.substring(1);
-            System.out.println(method);
-            String resource = (String) data1[6];
-            System.out.println(resource);
-            if (data1[8].equals("-")) {
-            	//save and flush null
+          }
+          String userAgent = userAgentBuilder.toString();
+          if (userAgent.equals("-")) {
+            accessLog.setUserAgent(null);
+          } else {
+            accessLog.setUserAgent(userAgent);
+            // System.out.println(userAgent);
+          }
+          accessLog.setRequestId(request);
+          System.out.println("row = " + val);
+          System.out.println("---------------");
+          val++;
+          requestRepository.saveAndFlush(request);
+          accessLogRepository.saveAndFlush(accessLog);
+        } else {
+          int length = data.length;
+          data[11] = data[11].substring(1);
+          data[length - 2] = data[length - 2].substring(0, data[length - 2].length() - 1);
+          String ipAddress = data[0];
+          request.setSourceIp(ipAddress);
+          // System.out.println(ipAddress);
+          String userId = data[2];
+          if (userId.equals("-")) {
+            accessLog.setUserId(null);
+          } else {
+            accessLog.setUserId(userId);
+            // System.out.println(userId);
+          }
+          String stringTimestamp =
+              strLine.substring(strLine.indexOf("[") + 1, strLine.indexOf("]"));
+          LocalDateTime timestamp = stringToLocalDateTimeAccessLog(stringTimestamp);
+          request.setTimestamp(timestamp);
+          // System.out.println(timestamp);
+          String method = data[5];
+          method = method.substring(1);
+          accessLog.setMethod(method);
+          // System.out.println(method);
+          String resource = data[6];
+          accessLog.setResource(resource);
+          // System.out.println(resource);
+          if (data[8].equals("-")) {
+            accessLog.setResponse(null);
+          } else {
+            long responseStatus = Long.parseLong(data[8]);
+            accessLog.setResponse(responseStatus);
+            // System.out.println(responseStatus);
+          }
+          if (data[9].equals("-")) {
+            accessLog.setResponseSize(null);
+          } else {
+            long responseSize = Long.parseLong(data[9]);
+            accessLog.setResponseSize(responseSize);
+            // System.out.println(responseSize);
+          }
+          String referer = data[10];
+          referer = referer.substring(1);
+          referer = referer.substring(0, referer.length() - 1);
+          if (referer.equals("-")) {
+            accessLog.setReferer(null);
+          } else {
+            accessLog.setReferer(referer);
+            // System.out.println(referer);
+          }
+          StringBuilder userAgentBuilder = new StringBuilder();
+          for (int i = 11; i < data.length - 1; i++) {
+            userAgentBuilder.append(data[i]);
+            if (i != data.length - 2) {
+              userAgentBuilder.append(" ");
             }
-            else {
-            	long responseStatus = Long.parseLong((String) data1[8]);
-            	System.out.println(responseStatus);
-            }
-            if (data1[9].equals("-")) {
-            	//save and flush null
-            }
-            else {
-            	long responseSize = Long.parseLong((String) data1[9]);
-            	System.out.println(responseSize);
-            }
-            String referer = (String) data1[10];
-            referer = referer.substring(1);
-            referer = referer.substring(0, referer.length() - 1);
-            if (referer.equals("-")) {
-              // saveAndFlush null value
-            }
-            System.out.println(referer);
-            StringBuilder userAgentBuilder = new StringBuilder();
-            for (int i = 11; i < data1.length - 1; i++) {
-              userAgentBuilder.append(data1[i]);
-              if (i != data1.length - 2) {
-                userAgentBuilder.append(" ");
-              }
-            }
-            String userAgent = userAgentBuilder.toString();
-            if (userAgent.equals("-")) {
-              // saveAndFlush null value
-            }
-            System.out.println(userAgent);
-            System.out.println("row = " + val);
-            System.out.println("---------------");
-            val++;
-          }       	
-          else {
-        	int length = data.length;
-        	data[11] = data[11].substring(1);
-            data[length - 2] = data[length - 2].substring(0, data[length - 2].length() - 1);
-            String ipAddress = data[0];
-            System.out.println(ipAddress);
-            String userId = data[1];
-            if (userId.equals("-")) {
-              // saveAndFlush null value
-            }
-            System.out.println(userId);
-            String stringTimestamp = strLine.substring(strLine.indexOf("[") + 1, strLine.indexOf("]"));
-            LocalDateTime timestamp = stringToLocalDateTimeAccessLog(stringTimestamp);
-            System.out.println(timestamp);
-            String method = data[5];
-            method = method.substring(1);
-            System.out.println(method);
-            String resource = data[6];
-            System.out.println(resource);
-            if (data[8].equals("-")) {
-            	//save and flush null
-            }
-            else {
-            	long responseStatus = Long.parseLong(data[8]);
-            	System.out.println(responseStatus);
-            }
-            if (data[9].equals("-")) {
-            	//save and flush null
-            }
-            else {
-            	long responseSize = Long.parseLong(data[9]);
-            	System.out.println(responseSize);
-            }
-            String referer = data[10];
-            referer = referer.substring(1);
-            referer = referer.substring(0, referer.length() - 1);
-            if (referer.equals("-")) {
-              // saveAndFlush null value
-            }
-            System.out.println(referer);
-            StringBuilder userAgentBuilder = new StringBuilder();
-            for (int i = 11; i < data.length - 1; i++) {
-              userAgentBuilder.append(data[i]);
-              if (i != data.length - 2) {
-                userAgentBuilder.append(" ");
-              }
-            }
-            String userAgent = userAgentBuilder.toString();
-            if (userAgent.equals("-")) {
-              // saveAndFlush null value
-            }
-            System.out.println(userAgent);
-            System.out.println("row = " + val);
-            System.out.println("---------------");
-            val++;
+          }
+          String userAgent = userAgentBuilder.toString();
+          if (userAgent.equals("-")) {
+            accessLog.setUserAgent(null);
+          } else {
+            accessLog.setUserAgent(userAgent);
+            // System.out.println(userAgent);
+          }
+          accessLog.setRequestId(request);
+          System.out.println("row = " + val);
+          System.out.println("---------------");
+          val++;
+          requestRepository.saveAndFlush(request);
+          accessLogRepository.saveAndFlush(accessLog);
         }
-
-        
       }
     } catch (Exception e) {
-      logger.error("Error adding users", e);
+      logger.error("Error adding row", e);
     }
-
 
   }
 
@@ -169,127 +221,250 @@ public class FillTablesService {
       return null;
     }
   }
-  
-  private LocalDateTime stringToLocalDateTimeDataXceiver(String date) {
-	    try {
-	      DateTimeFormatter sdf =
-	          DateTimeFormatter.ofPattern("ddMMyyHHmmss");
-	      LocalDateTime timeWithZone = LocalDateTime.parse(date, sdf);
-	      return timeWithZone;
-	    } catch (DateTimeParseException exception) {
-	      logger.error("Error parsing Date ", exception);
-	      return null;
-	    }
-  }
-  
-  public void parseDataXceiver() throws IOException {
-	  ClassPathResource classPathResource = new ClassPathResource("HDFS_DataXceiver.log");
-	    try (BufferedReader br =
-	        new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
-	    	String strLine;
-	    	int c = 0;
-	    	while ((strLine = br.readLine()) != null) {
-	    		System.out.println(c);
-	    		c++;
-	    		String[] data = strLine.split(" ");
-	    		if (data[5].equals("writeBlock")) {
-	    			continue;
-	    		}
-	    		if (data[3].equals("ERROR")) {
-	    			continue;
-	    		}
-	    		String stringTimestamp = data[0] + data[1];
-	    		LocalDateTime timestamp = stringToLocalDateTimeDataXceiver(stringTimestamp);
-	    		System.out.println(timestamp);
-	    		//String strBlockId = data[2];
-	    		for (String s : data) {
-	    			if (s.startsWith("blk_")) {
-	    				System.out.println(s);
-	    				break;
-	    			}
-	    		}
-	    		int srcPosition = 0;
-	    		int destPosition = 0;
-	    		for (String s : data) {
-	    			if (s.equals("src:")) {
-	    				break;
-	    			}
-	    			srcPosition ++;
-	    		}
-	    		for (String s : data) {
-	    			if (s.equals("dest:")) {
-	    				break;
-	    			}
-	    			destPosition ++;
-	    		}
-	    		//if src is not exist
-	    		if (srcPosition == data.length) {
-	    			String ipAddress = data[5];
-	    			if (ipAddress.startsWith("/")) {
-	    				ipAddress = ipAddress.substring(1);
-	    			}
-	    			if (ipAddress.contains(":")) {
-	    				ipAddress = ipAddress.substring(0, ipAddress.indexOf(":"));
-	    			}
-	    			System.out.println(ipAddress);
-	    			int destPos = 0;
-	    			for (String s : data) {
-		    			if (s.equals("to")) {
-		    				break;
-		    			}
-		    			destPos++;
-		    		}
-	    			String destAddress = data[destPos + 1];
-	    			if (destAddress.startsWith("/")) {
-	    				destAddress = destAddress.substring(1);
-	    			}
-	    			if (destAddress.contains(":")) {
-	    				destAddress = destAddress.substring(0, destAddress.indexOf(":"));
-	    			}
-	    			System.out.println(destAddress);
-	    			if (data[3].equals("INFO")) {
-	    				String type = data[6];
-	    				System.out.println(type);
-	    			}
-	    			else {
-	    				System.out.println("exception");
-	    				//to type einai exception mallon null
-	    			}
-	    		}
-	    		//if src exist
-	    		else {
-	    			String ipAddress = data[srcPosition + 1];
-	    			String destAddress = data[destPosition + 1];
-	    			if (ipAddress.startsWith("/")) {
-	    				ipAddress = ipAddress.substring(1);
-	    			}
-	    			if (ipAddress.contains(":")) {
-	    				ipAddress = ipAddress.substring(0, ipAddress.indexOf(":"));
-	    			}
-	    			if (destAddress.startsWith("/")) {
-	    				destAddress = destAddress.substring(1);
-	    			}
-	    			if (destAddress.contains(":")) {
-	    				destAddress = destAddress.substring(0, destAddress.indexOf(":"));
-	    			}
-	    			System.out.println(ipAddress);
-	    			System.out.println(destAddress);
-	    			String type = data[5];
-	    			System.out.println(type);
-	    		}
-	    		if (data[data.length - 2].equals("size")) {
-	    			Long size = Long.parseLong(data[data.length - 1]);
-	    			System.out.println(size);
-	    		}
-	    		else {
-	    			System.out.println("Does not exists");
-	    			//vale ston pinaka null
-	    		}
-	    		System.out.println("------------------");
-	    	}
-	    }
-  }
-  
 
+  private LocalDateTime stringToLocalDateTimeDataXceiver(String date) {
+    try {
+      DateTimeFormatter sdf = DateTimeFormatter.ofPattern("ddMMyyHHmmss");
+      LocalDateTime timeWithZone = LocalDateTime.parse(date, sdf);
+      return timeWithZone;
+    } catch (DateTimeParseException exception) {
+      logger.error("Error parsing Date ", exception);
+      return null;
+    }
+  }
+
+  public void parseDataXceiver() throws IOException {
+    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
+    try (BufferedReader br =
+        new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
+      String strLine;
+      int c = 0;
+      while ((strLine = br.readLine()) != null) {
+        Request request = new Request();
+        Block block = new Block();
+        Destination destination = new Destination();
+        RequestType requestType = new RequestType();
+        System.out.println(c);
+        c++;
+        String[] data = strLine.split(" ");
+        boolean flag = false;
+        for (String s : data) {
+          if (s.equals("exception")) {
+            flag = true;
+            break;
+          }
+        }
+        if (flag == true) {
+          continue;
+        }
+        if (data[5].equals("writeBlock")) {
+          continue;
+        }
+        if (data[3].equals("ERROR")) {
+          continue;
+        }
+        String stringTimestamp = data[0] + data[1];
+        LocalDateTime timestamp = stringToLocalDateTimeDataXceiver(stringTimestamp);
+        // System.out.println(timestamp);
+        request.setTimestamp(timestamp);
+        List<Block> blocks = new ArrayList<>();
+        for (String s : data) {
+          if (s.startsWith("blk_")) {
+            // System.out.println(s);
+            block.setBlockId(s);
+            block.setRequest(request);
+            blocks.add(block);
+            request.setBlocks(blocks);
+            break;
+          }
+        }
+        int srcPosition = 0;
+        int destPosition = 0;
+        for (String s : data) {
+          if (s.equals("src:")) {
+            break;
+          }
+          srcPosition++;
+        }
+        for (String s : data) {
+          if (s.equals("dest:")) {
+            break;
+          }
+          destPosition++;
+        }
+        List<Destination> destinations = new ArrayList<>();
+        // if src is not exist
+        if (srcPosition == data.length) {
+          String ipAddress = data[5];
+          if (ipAddress.startsWith("/")) {
+            ipAddress = ipAddress.substring(1);
+          }
+          if (ipAddress.contains(":")) {
+            ipAddress = ipAddress.substring(0, ipAddress.indexOf(":"));
+          }
+          // System.out.println(ipAddress);
+          request.setSourceIp(ipAddress);
+          int destPos = 0;
+          for (String s : data) {
+            if (s.equals("to")) {
+              break;
+            }
+            destPos++;
+          }
+          String destAddress = data[destPos + 1];
+          if (destAddress.startsWith("/")) {
+            destAddress = destAddress.substring(1);
+          }
+          if (destAddress.contains(":")) {
+            destAddress = destAddress.substring(0, destAddress.indexOf(":"));
+          }
+          // System.out.println(destAddress);
+          destination.setDestinationIp(destAddress);
+          if (data[3].equals("INFO")) {
+            String type = data[6];
+            // System.out.println(type);
+            requestType.setType(type);
+          } else {
+            requestType.setType(null);
+          }
+          if (data[data.length - 2].equals("size")) {
+            Long size = Long.parseLong(data[data.length - 1]);
+            destination.setSize(size);
+            // System.out.println(size);
+          } else {
+            destination.setSize(null);
+            // System.out.println("Does not exists");
+          }
+          destination.setRequest(request);
+          destinations.add(destination);
+          request.setDestinations(destinations);
+        }
+        // if src exist
+        else {
+          String ipAddress = data[srcPosition + 1];
+          String destAddress = data[destPosition + 1];
+          if (ipAddress.startsWith("/")) {
+            ipAddress = ipAddress.substring(1);
+          }
+          if (ipAddress.contains(":")) {
+            ipAddress = ipAddress.substring(0, ipAddress.indexOf(":"));
+          }
+          if (destAddress.startsWith("/")) {
+            destAddress = destAddress.substring(1);
+          }
+          if (destAddress.contains(":")) {
+            destAddress = destAddress.substring(0, destAddress.indexOf(":"));
+          }
+          request.setSourceIp(ipAddress);
+          // System.out.println(ipAddress);
+          destination.setDestinationIp(destAddress);
+          // System.out.println(destAddress);
+          String type = data[5];
+          requestType.setType(type);
+          // System.out.println(type);
+          if (data[data.length - 2].equals("size")) {
+            Long size = Long.parseLong(data[data.length - 1]);
+            destination.setSize(size);
+            // System.out.println(size);
+          } else {
+            destination.setSize(null);
+            // System.out.println("Does not exists");
+          }
+          destination.setRequest(request);
+          destinations.add(destination);
+          request.setDestinations(destinations);
+        }
+        requestRepository.saveAndFlush(request);
+        if (requestType.getType() != null) {
+          requestType.setRequestId(request);
+          requestTypeRepository.saveAndFlush(requestType);
+        }
+        System.out.println("------------------");
+      }
+    } catch (Exception e) {
+      logger.error("Error adding row", e);
+    }
+  }
+
+  public void parseNameSystem() throws IOException {
+    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
+    try (BufferedReader br =
+        new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
+      String strLine;
+      int lines = 0;
+      while ((strLine = br.readLine()) != null) {
+        lines++;
+        Request request = new Request();
+        // get timestamp
+        String[] data = strLine.split(" ");
+        String stringTimestamp = data[0] + data[1];
+        LocalDateTime timestamp = stringToLocalDateTimeDataXceiver(stringTimestamp);
+        // System.out.println(timestamp);
+        request.setTimestamp(timestamp);
+        String sourceIp = data[7];
+        if (sourceIp.contains(":")) {
+          sourceIp = sourceIp.substring(0, sourceIp.indexOf(":"));
+        }
+        // System.out.println(sourceIp);
+        request.setSourceIp(sourceIp);
+        // get dest ip
+        boolean flag = false;
+        int ipPos2 = 0;
+
+        // get type
+        String type = data[9];
+        // System.out.println(type);
+        RequestType requestType = new RequestType();
+        requestType.setType(type);
+
+        for (String s : data) {
+          if (s.equals("datanode(s)")) {
+            flag = true;
+            break;
+          }
+          ipPos2++;
+        }
+        if (flag == true) {
+          List<Destination> destinations = new ArrayList<>();
+          for (int i = ipPos2 + 1; i < data.length; i++) {
+            Destination destination = new Destination();
+            String destIp = data[i];
+            destination.setDestinationIp(destIp);
+            destination.setSize(null);
+            destination.setRequest(request);
+            destinations.add(destination);
+            // System.out.println(destIp);
+          }
+          request.setDestinations(destinations);
+        } else {
+          // null to dest ip
+          // System.out.println("No dest IP");
+        }
+
+        // get block(s)
+        List<Block> blocks = new ArrayList<>();
+        for (String s : data) {
+          if (s.contains("blk_")) {
+            Block block = new Block();
+            block.setBlockId(s);
+            block.setRequest(request);
+            blocks.add(block);
+            // System.out.println(s);
+          }
+        }
+        if (blocks.size() > 0) {
+          request.setBlocks(blocks);
+        }
+
+        requestRepository.saveAndFlush(request);
+        requestType.setRequestId(request);
+        requestTypeRepository.saveAndFlush(requestType);
+        System.out.println(lines);
+        System.out.println("--------------------");
+      }
+    } catch (Exception e) {
+      logger.error("Error adding row", e);
+    }
+  }
 
 }

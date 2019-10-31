@@ -13,10 +13,24 @@ public class Project1DbManagementSystemsApplication {
     SpringApplication.run(Project1DbManagementSystemsApplication.class, args);
   }
 
+//   @Bean
+//   public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
+//   return args -> {
+//	   fillTablesService.parseAccessLog();
+//   };
+//   }
+
+//   @Bean
+//   public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
+//   return args -> {
+//   fillTablesService.parseDataXceiver();
+//   };
+//   }
+
   @Bean
-  public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
+  public CommandLineRunner testSubscriptionService3(FillTablesService fillTablesService) {
     return args -> {
-      fillTablesService.parseDataXceiver();
+      fillTablesService.parseNameSystem();
     };
   }
 
