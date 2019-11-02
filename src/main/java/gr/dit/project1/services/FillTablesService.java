@@ -19,11 +19,13 @@ import gr.dit.project1.entities.Block;
 import gr.dit.project1.entities.Destination;
 import gr.dit.project1.entities.Request;
 import gr.dit.project1.entities.RequestType;
+import gr.dit.project1.entities.ResponseSize;
 import gr.dit.project1.repositories.AccessLogRepository;
 import gr.dit.project1.repositories.BlockRepository;
 import gr.dit.project1.repositories.DestinationRepository;
 import gr.dit.project1.repositories.RequestRepository;
 import gr.dit.project1.repositories.RequestTypeRepository;
+import gr.dit.project1.repositories.ResponseSizeRepository;
 
 @Service
 public class FillTablesService {
@@ -35,15 +37,17 @@ public class FillTablesService {
   private final DestinationRepository destinationRepository;
   private final BlockRepository blockRepository;
   private final RequestTypeRepository requestTypeRepository;
+  private final ResponseSizeRepository responseSizeRepository;
 
   public FillTablesService(RequestRepository requestRepository,
       AccessLogRepository accessLogRepository, DestinationRepository destinationRepository,
-      BlockRepository blockRepository, RequestTypeRepository requestTypeRepository) {
+      BlockRepository blockRepository, RequestTypeRepository requestTypeRepository, ResponseSizeRepository responseSizeRepository) {
     this.requestRepository = requestRepository;
     this.accessLogRepository = accessLogRepository;
     this.destinationRepository = destinationRepository;
     this.blockRepository = blockRepository;
     this.requestTypeRepository = requestTypeRepository;
+    this.responseSizeRepository = responseSizeRepository;
   }
 
   public void parseAccessLog() throws IOException {
@@ -57,6 +61,7 @@ public class FillTablesService {
         String[] data = strLine.split(" ");
         Request request = new Request();
         AccessLog accessLog = new AccessLog();
+        ResponseSize responseSize = new ResponseSize();
         // System.out.println("length: " + data.length);
         if (data[7].equals("")) {
           List<String> list = new ArrayList<String>(Arrays.asList(data));
@@ -84,6 +89,9 @@ public class FillTablesService {
           // System.out.println(timestamp);
           String method = (String) data1[5];
           method = method.substring(1);
+          if (method.length() > 10) {
+        	  continue;
+          }
           accessLog.setMethod(method);
           // System.out.println(method);
           String resource = (String) data1[6];
@@ -97,10 +105,10 @@ public class FillTablesService {
             // System.out.println(responseStatus);
           }
           if (data1[9].equals("-")) {
-            accessLog.setResponseSize(null);
+        	  responseSize.setSize(null);
           } else {
-            Long responseSize = Long.parseLong((String) data1[9]);
-            accessLog.setResponseSize(responseSize);
+            Long rSize = Long.parseLong((String) data1[9]);
+            responseSize.setSize(rSize);
             // System.out.println(responseSize);
           }
           String referer = (String) data1[10];
@@ -131,6 +139,10 @@ public class FillTablesService {
           System.out.println("---------------");
           val++;
           requestRepository.saveAndFlush(request);
+          if (responseSize.getSize() != null) {
+              responseSize.setRequestId(request);
+              responseSizeRepository.saveAndFlush(responseSize);
+          }
           accessLogRepository.saveAndFlush(accessLog);
         } else {
           int length = data.length;
@@ -153,6 +165,9 @@ public class FillTablesService {
           // System.out.println(timestamp);
           String method = data[5];
           method = method.substring(1);
+          if (method.length() > 10) {
+        	  continue;
+          }
           accessLog.setMethod(method);
           // System.out.println(method);
           String resource = data[6];
@@ -166,10 +181,10 @@ public class FillTablesService {
             // System.out.println(responseStatus);
           }
           if (data[9].equals("-")) {
-            accessLog.setResponseSize(null);
+        	  responseSize.setSize(null);
           } else {
-            long responseSize = Long.parseLong(data[9]);
-            accessLog.setResponseSize(responseSize);
+            long rSize = Long.parseLong(data[9]);
+            responseSize.setSize(rSize);
             // System.out.println(responseSize);
           }
           String referer = data[10];
@@ -200,6 +215,10 @@ public class FillTablesService {
           System.out.println("---------------");
           val++;
           requestRepository.saveAndFlush(request);
+          if (responseSize.getSize() != null) {
+              responseSize.setRequestId(request);
+              responseSizeRepository.saveAndFlush(responseSize);
+          }
           accessLogRepository.saveAndFlush(accessLog);
         }
       }
@@ -244,6 +263,7 @@ public class FillTablesService {
         Block block = new Block();
         Destination destination = new Destination();
         RequestType requestType = new RequestType();
+        ResponseSize responseSize = new ResponseSize();
         System.out.println(c);
         c++;
         String[] data = strLine.split(" ");
@@ -329,10 +349,10 @@ public class FillTablesService {
           }
           if (data[data.length - 2].equals("size")) {
             Long size = Long.parseLong(data[data.length - 1]);
-            destination.setSize(size);
+            responseSize.setSize(size);
             // System.out.println(size);
           } else {
-            destination.setSize(null);
+        	  responseSize.setSize(null);
             // System.out.println("Does not exists");
           }
           destination.setRequest(request);
@@ -364,10 +384,10 @@ public class FillTablesService {
           // System.out.println(type);
           if (data[data.length - 2].equals("size")) {
             Long size = Long.parseLong(data[data.length - 1]);
-            destination.setSize(size);
+            responseSize.setSize(size);
             // System.out.println(size);
           } else {
-            destination.setSize(null);
+        	  responseSize.setSize(null);
             // System.out.println("Does not exists");
           }
           destination.setRequest(request);
@@ -378,6 +398,10 @@ public class FillTablesService {
         if (requestType.getType() != null) {
           requestType.setRequestId(request);
           requestTypeRepository.saveAndFlush(requestType);
+        }
+        if (responseSize.getSize() != null) {
+        	responseSize.setRequestId(request);
+        	responseSizeRepository.saveAndFlush(responseSize);
         }
         System.out.println("------------------");
       }
@@ -430,7 +454,6 @@ public class FillTablesService {
             Destination destination = new Destination();
             String destIp = data[i];
             destination.setDestinationIp(destIp);
-            destination.setSize(null);
             destination.setRequest(request);
             destinations.add(destination);
             // System.out.println(destIp);

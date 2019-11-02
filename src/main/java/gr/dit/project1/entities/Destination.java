@@ -19,8 +19,6 @@ public class Destination {
 
   private String destinationIp;
 
-  private Long size;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "request_id")
   private Request request;
@@ -49,14 +47,6 @@ public class Destination {
 
   public void setRequest(Request request) {
     this.request = request;
-  }
-
-  public Long getSize() {
-    return size;
-  }
-
-  public void setSize(Long size) {
-    this.size = size;
   }
 
 }

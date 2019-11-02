@@ -1,6 +1,7 @@
 package gr.dit.project1.entities;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -8,6 +9,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "access_log")
@@ -21,17 +25,19 @@ public class AccessLog {
 
   private String method;
 
+  @Column(columnDefinition = "text")
   private String resource;
 
   private Long response;
 
-  private Long responseSize;
-
+  @Column(columnDefinition = "text")
   private String referer;
 
+  @Column(columnDefinition = "text")
   private String userAgent;
 
-  @OneToOne(cascade = CascadeType.REMOVE)
+  @OneToOne
+  @OnDelete(action = OnDeleteAction.CASCADE)
   @JoinColumn(name = "request_id", referencedColumnName = "id")
   private Request requestId;
 
@@ -75,14 +81,6 @@ public class AccessLog {
 
   public void setResponse(Long response) {
     this.response = response;
-  }
-
-  public Long getResponseSize() {
-    return responseSize;
-  }
-
-  public void setResponseSize(Long responseSize) {
-    this.responseSize = responseSize;
   }
 
   public String getReferer() {

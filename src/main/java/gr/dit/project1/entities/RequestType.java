@@ -9,6 +9,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 @Entity
 @Table(name = "request_type")
 public class RequestType {
@@ -19,7 +22,8 @@ public class RequestType {
 
   private String type;
 
-  @OneToOne(cascade = CascadeType.REMOVE)
+  @OneToOne
+  @OnDelete(action = OnDeleteAction.CASCADE)
   @JoinColumn(name = "request_id", referencedColumnName = "id")
   private Request requestId;
 
