@@ -1,9 +1,11 @@
 package gr.dit.project1.services;
 
 import java.io.BufferedReader;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -18,13 +20,11 @@ import gr.dit.project1.entities.AccessLog;
 import gr.dit.project1.entities.Block;
 import gr.dit.project1.entities.Destination;
 import gr.dit.project1.entities.Request;
-import gr.dit.project1.entities.RequestType;
 import gr.dit.project1.entities.ResponseSize;
 import gr.dit.project1.repositories.AccessLogRepository;
 import gr.dit.project1.repositories.BlockRepository;
 import gr.dit.project1.repositories.DestinationRepository;
 import gr.dit.project1.repositories.RequestRepository;
-import gr.dit.project1.repositories.RequestTypeRepository;
 import gr.dit.project1.repositories.ResponseSizeRepository;
 
 @Service
@@ -36,22 +36,20 @@ public class FillTablesService {
   private final AccessLogRepository accessLogRepository;
   private final DestinationRepository destinationRepository;
   private final BlockRepository blockRepository;
-  private final RequestTypeRepository requestTypeRepository;
   private final ResponseSizeRepository responseSizeRepository;
 
   public FillTablesService(RequestRepository requestRepository,
       AccessLogRepository accessLogRepository, DestinationRepository destinationRepository,
-      BlockRepository blockRepository, RequestTypeRepository requestTypeRepository, ResponseSizeRepository responseSizeRepository) {
+      BlockRepository blockRepository, ResponseSizeRepository responseSizeRepository) {
     this.requestRepository = requestRepository;
     this.accessLogRepository = accessLogRepository;
     this.destinationRepository = destinationRepository;
     this.blockRepository = blockRepository;
-    this.requestTypeRepository = requestTypeRepository;
     this.responseSizeRepository = responseSizeRepository;
   }
 
   public void parseAccessLog() throws IOException {
-    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
+    ClassPathResource classPathResource = new ClassPathResource("access.log");
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
 
@@ -253,7 +251,7 @@ public class FillTablesService {
   }
 
   public void parseDataXceiver() throws IOException {
-    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
+    ClassPathResource classPathResource = new ClassPathResource("HDFS_DataXceiver.log");
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
       String strLine;
@@ -262,7 +260,6 @@ public class FillTablesService {
         Request request = new Request();
         Block block = new Block();
         Destination destination = new Destination();
-        RequestType requestType = new RequestType();
         ResponseSize responseSize = new ResponseSize();
         System.out.println(c);
         c++;
@@ -343,9 +340,9 @@ public class FillTablesService {
           if (data[3].equals("INFO")) {
             String type = data[6];
             // System.out.println(type);
-            requestType.setType(type);
+            //requestType.setType(type);
           } else {
-            requestType.setType(null);
+            //requestType.setType(null);
           }
           if (data[data.length - 2].equals("size")) {
             Long size = Long.parseLong(data[data.length - 1]);
@@ -380,7 +377,7 @@ public class FillTablesService {
           destination.setDestinationIp(destAddress);
           // System.out.println(destAddress);
           String type = data[5];
-          requestType.setType(type);
+          //requestType.setType(type);
           // System.out.println(type);
           if (data[data.length - 2].equals("size")) {
             Long size = Long.parseLong(data[data.length - 1]);
@@ -395,10 +392,10 @@ public class FillTablesService {
           request.setDestinations(destinations);
         }
         requestRepository.saveAndFlush(request);
-        if (requestType.getType() != null) {
-          requestType.setRequestId(request);
-          requestTypeRepository.saveAndFlush(requestType);
-        }
+        //if (requestType.getType() != null) {
+        //  requestType.setRequestId(request);
+        //  requestTypeRepository.saveAndFlush(requestType);
+        //}
         if (responseSize.getSize() != null) {
         	responseSize.setRequestId(request);
         	responseSizeRepository.saveAndFlush(responseSize);
@@ -411,7 +408,7 @@ public class FillTablesService {
   }
 
   public void parseNameSystem() throws IOException {
-    ClassPathResource classPathResource = new ClassPathResource("logs.txt");
+    ClassPathResource classPathResource = new ClassPathResource("HDFS_FS_Namesystem.log");
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(classPathResource.getInputStream()))) {
       String strLine;
@@ -438,8 +435,8 @@ public class FillTablesService {
         // get type
         String type = data[9];
         // System.out.println(type);
-        RequestType requestType = new RequestType();
-        requestType.setType(type);
+        
+        //requestType.setType(type);
 
         for (String s : data) {
           if (s.equals("datanode(s)")) {
@@ -480,14 +477,47 @@ public class FillTablesService {
         }
 
         requestRepository.saveAndFlush(request);
-        requestType.setRequestId(request);
-        requestTypeRepository.saveAndFlush(requestType);
         System.out.println(lines);
         System.out.println("--------------------");
       }
     } catch (Exception e) {
       logger.error("Error adding row", e);
     }
+  }
+  
+  public void executeQuery1() {
+	  LocalDateTime start  = LocalDateTime.of(2016, Month.JULY, 29, 19, 30, 40);
+	  LocalDateTime end  = LocalDateTime.of(2018, Month.JULY, 29, 19, 30, 40);
+	  List<Object[]> resultList = requestRepository.query1(start, end);
+	  resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+  }
+  
+  public void executeQuery2() {
+	  String type = "Access";
+	  LocalDateTime start  = LocalDateTime.of(2000, Month.JULY, 29, 19, 30, 40);
+	  LocalDateTime end  = LocalDateTime.of(2020, Month.JULY, 29, 19, 30, 40);
+	  List<Object[]> resultList = requestRepository.query2(type, start, end);
+	  resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+  }
+  
+  public void executeQuery3() {
+	  LocalDateTime specificDay  = LocalDateTime.of(2018, Month.NOVEMBER, 8, 19, 30, 40);
+	  List<Object[]> resultList = requestRepository.query3(specificDay);
+	  if(resultList.isEmpty()) {
+		  return;
+	  }
+	  String previousIp = resultList.get(0)[0].toString();
+	  System.out.println(previousIp + " " + resultList.get(0)[1].toString() + " " + resultList.get(0)[2].toString());
+	 
+	  for (Object[] r : resultList) {
+		  String sourceIp = r[0].toString();
+		  if (sourceIp.equals(previousIp)) {
+			  continue;
+		  }
+		  System.out.println(r[0] + " " + r[1] + " " + r[2]);
+		  previousIp = sourceIp;
+	  }
+	  //resultList.forEach(r -> System.out.println(Arrays.toString(r)));
   }
 
 }

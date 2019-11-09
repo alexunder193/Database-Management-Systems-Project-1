@@ -23,6 +23,8 @@ public class Request {
   private LocalDateTime timestamp;
 
   private String sourceIp;
+  
+  private String type;
 
   @OneToMany(mappedBy = "request", cascade = {CascadeType.MERGE, CascadeType.PERSIST})
   @OnDelete(action = OnDeleteAction.CASCADE)
@@ -73,5 +75,13 @@ public class Request {
   public void setBlocks(List<Block> blocks) {
     this.blocks = blocks;
   }
+
+public String getType() {
+	return type;
+}
+
+public void setType(String type) {
+	this.type = type;
+}
 
 }

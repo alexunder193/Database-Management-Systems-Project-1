@@ -4,6 +4,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+
+
 import gr.dit.project1.services.FillTablesService;
 
 @SpringBootApplication
@@ -15,24 +17,24 @@ public class Project1DbManagementSystemsApplication {
 
 //   @Bean
 //   public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
-//   return args -> {
-//	   fillTablesService.parseAccessLog();
-//   };
+//	   return args -> {
+//		   fillTablesService.parseAccessLog();
+//	   };
 //   }
 
 //   @Bean
 //   public CommandLineRunner testSubscriptionService(FillTablesService fillTablesService) {
-//   return args -> {
-//   fillTablesService.parseDataXceiver();
-//   };
+//	   return args -> {
+//		   fillTablesService.parseDataXceiver();
+//	   };
 //   }
 
-  @Bean
-  public CommandLineRunner testSubscriptionService3(FillTablesService fillTablesService) {
-    return args -> {
-      fillTablesService.parseNameSystem();
-    };
-  }
+//  @Bean
+//  public CommandLineRunner testSubscriptionService3(FillTablesService fillTablesService) {
+//    return args -> {
+//      fillTablesService.parseNameSystem();
+//    };
+//  }
 
   // @Bean
   // public CommandLineRunner testDate(FillTablesService fillTablesService) {
@@ -41,5 +43,12 @@ public class Project1DbManagementSystemsApplication {
   // System.out.println(a);
   // };
   // }
+  
+   @Bean
+   public CommandLineRunner testDate(FillTablesService fillTablesService) {
+	   return args -> {
+		   fillTablesService.executeQuery3();
+	   };
+   }
 
 }
