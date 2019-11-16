@@ -44,11 +44,11 @@ public class Project1DbManagementSystemsApplication {
   // };
   // }
   
-   @Bean
-   public CommandLineRunner testDate(FillTablesService fillTablesService) {
-	   return args -> {
-		   fillTablesService.executeQuery3();
-	   };
-   }
+//   @Bean
+//   public CommandLineRunner testDate(FillTablesService fillTablesService) {
+//	   return args -> {
+//		   fillTablesService.executeQuery3();
+//	   };
+//   }
 
 }
