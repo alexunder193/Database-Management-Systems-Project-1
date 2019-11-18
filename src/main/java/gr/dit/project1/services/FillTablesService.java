@@ -2,10 +2,10 @@ package gr.dit.project1.services;
 
 import java.io.BufferedReader;
 
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -22,8 +22,6 @@ import gr.dit.project1.entities.Destination;
 import gr.dit.project1.entities.Request;
 import gr.dit.project1.entities.ResponseSize;
 import gr.dit.project1.repositories.AccessLogRepository;
-import gr.dit.project1.repositories.BlockRepository;
-import gr.dit.project1.repositories.DestinationRepository;
 import gr.dit.project1.repositories.RequestRepository;
 import gr.dit.project1.repositories.ResponseSizeRepository;
 
@@ -34,17 +32,12 @@ public class FillTablesService {
 
   private final RequestRepository requestRepository;
   private final AccessLogRepository accessLogRepository;
-  private final DestinationRepository destinationRepository;
-  private final BlockRepository blockRepository;
   private final ResponseSizeRepository responseSizeRepository;
 
   public FillTablesService(RequestRepository requestRepository,
-      AccessLogRepository accessLogRepository, DestinationRepository destinationRepository,
-      BlockRepository blockRepository, ResponseSizeRepository responseSizeRepository) {
+      AccessLogRepository accessLogRepository, ResponseSizeRepository responseSizeRepository) {
     this.requestRepository = requestRepository;
     this.accessLogRepository = accessLogRepository;
-    this.destinationRepository = destinationRepository;
-    this.blockRepository = blockRepository;
     this.responseSizeRepository = responseSizeRepository;
   }
 
@@ -227,7 +220,7 @@ public class FillTablesService {
   }
 
 
-  private LocalDateTime stringToLocalDateTimeAccessLog(String date) {
+  public LocalDateTime stringToLocalDateTimeAccessLog(String date) {
     try {
       DateTimeFormatter sdf =
           DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z").withLocale(Locale.ENGLISH);
@@ -238,8 +231,20 @@ public class FillTablesService {
       return null;
     }
   }
+  
+  public LocalDateTime stringToLocalDateTimeRequest(String date) {
+	    try {
+	      DateTimeFormatter sdf =
+	          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	      LocalDateTime timeWithZone = LocalDateTime.parse(date, sdf);
+	      return timeWithZone;
+	    } catch (DateTimeParseException exception) {
+	      logger.error("Error parsing Date ", exception);
+	      return null;
+	    }
+	  }
 
-  private LocalDateTime stringToLocalDateTimeDataXceiver(String date) {
+  public LocalDateTime stringToLocalDateTimeDataXceiver(String date) {
     try {
       DateTimeFormatter sdf = DateTimeFormatter.ofPattern("ddMMyyHHmmss");
       LocalDateTime timeWithZone = LocalDateTime.parse(date, sdf);
@@ -338,7 +343,7 @@ public class FillTablesService {
           // System.out.println(destAddress);
           destination.setDestinationIp(destAddress);
           if (data[3].equals("INFO")) {
-            String type = data[6];
+            //String type = data[6];
             // System.out.println(type);
             //requestType.setType(type);
           } else {
@@ -376,7 +381,7 @@ public class FillTablesService {
           // System.out.println(ipAddress);
           destination.setDestinationIp(destAddress);
           // System.out.println(destAddress);
-          String type = data[5];
+          //String type = data[5];
           //requestType.setType(type);
           // System.out.println(type);
           if (data[data.length - 2].equals("size")) {
@@ -433,7 +438,7 @@ public class FillTablesService {
         int ipPos2 = 0;
 
         // get type
-        String type = data[9];
+        //String type = data[9];
         // System.out.println(type);
         
         //requestType.setType(type);
@@ -485,39 +490,52 @@ public class FillTablesService {
     }
   }
   
-  public void executeQuery1() {
-	  LocalDateTime start  = LocalDateTime.of(2016, Month.JULY, 29, 19, 30, 40);
-	  LocalDateTime end  = LocalDateTime.of(2018, Month.JULY, 29, 19, 30, 40);
+  public List<Object[]> executeQuery1(LocalDateTime start, LocalDateTime end) {
+	  //LocalDateTime start  = LocalDateTime.of(2016, Month.JULY, 29, 19, 30, 40);
+	  //LocalDateTime end  = LocalDateTime.of(2018, Month.JULY, 29, 19, 30, 40);
 	  List<Object[]> resultList = requestRepository.query1(start, end);
-	  resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+	  //resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+	  return resultList;
   }
   
-  public void executeQuery2() {
-	  String type = "Access";
-	  LocalDateTime start  = LocalDateTime.of(2000, Month.JULY, 29, 19, 30, 40);
-	  LocalDateTime end  = LocalDateTime.of(2020, Month.JULY, 29, 19, 30, 40);
+  public List<Object[]> executeQuery2(LocalDateTime start, LocalDateTime end, String type) {
+	  //String type = "Access";
+	  //LocalDateTime start  = LocalDateTime.of(2000, Month.JULY, 29, 19, 30, 40);
+	  //LocalDateTime end  = LocalDateTime.of(2020, Month.JULY, 29, 19, 30, 40);
 	  List<Object[]> resultList = requestRepository.query2(type, start, end);
-	  resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+	  //resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+	  return resultList;
   }
   
-  public void executeQuery3() {
-	  LocalDateTime specificDay  = LocalDateTime.of(2018, Month.NOVEMBER, 8, 19, 30, 40);
-	  List<Object[]> resultList = requestRepository.query3(specificDay);
-	  if(resultList.isEmpty()) {
-		  return;
+  public List<Object[]> executeQuery3(LocalDateTime start) {
+	  //LocalDateTime specificDay  = LocalDateTime.of(2018, Month.NOVEMBER, 8, 19, 30, 40);
+	  List<Object[]> list = requestRepository.query3(start);
+	  if(list.isEmpty()) {
+		  return null;
 	  }
-	  String previousIp = resultList.get(0)[0].toString();
-	  System.out.println(previousIp + " " + resultList.get(0)[1].toString() + " " + resultList.get(0)[2].toString());
-	 
-	  for (Object[] r : resultList) {
+	  List<Object[]> returnList = new ArrayList<>();
+	  Object[] returnObject = new Object[3];
+	  String previousIp = list.get(0)[0].toString();
+	  //System.out.println(previousIp + " " + resultList.get(0)[1].toString() + " " + resultList.get(0)[2].toString());
+	  returnObject[0] = previousIp;
+	  returnObject[1] = list.get(0)[1].toString();
+	  returnObject[2] = list.get(0)[2].toString();
+	  returnList.add(returnObject);
+	  for (Object[] r : list) {
 		  String sourceIp = r[0].toString();
 		  if (sourceIp.equals(previousIp)) {
 			  continue;
 		  }
-		  System.out.println(r[0] + " " + r[1] + " " + r[2]);
+		  Object[] returnObject1 = new Object[3];
+		  returnObject1[0] = r[0];
+		  returnObject1[1] = r[1];
+		  returnObject1[2] = r[2];
+		  returnList.add(returnObject1);
+		  //System.out.println(r[0] + " " + r[1] + " " + r[2]);
 		  previousIp = sourceIp;
 	  }
 	  //resultList.forEach(r -> System.out.println(Arrays.toString(r)));
+	  return returnList;
   }
 
 }
