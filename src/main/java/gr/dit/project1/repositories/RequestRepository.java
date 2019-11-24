@@ -24,4 +24,6 @@ public interface RequestRepository extends JpaRepository<Request, Long>{
 			+ "group by r.sourceIp, r.type "
 			+ "order by r.sourceIp, count(r.type) DESC")
 	List<Object[]> query3(@Param("specific") LocalDateTime specific);
+	
+	List<Request> findAllBySourceIp(@Param("source") String source);
 }

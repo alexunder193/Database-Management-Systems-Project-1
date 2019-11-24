@@ -1,7 +1,6 @@
 package gr.dit.project1.controllers;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,10 +22,6 @@ public class QueryController {
 	
 	@PostMapping
 	public ResponseEntity<?> queryExecute(@RequestBody QueryRequest queryRequest) {
-		//System.out.println(queryRequest.getStartDate());
-		//System.out.println(queryRequest.getEndDate());
-		//System.out.println(queryRequest.getWord());
-		//System.out.println(queryRequest.getType());
 		
 		if (queryRequest.getStartDate().contains("T")) {
 			queryRequest.setStartDate(queryRequest.getStartDate().replace("T", " "));
@@ -45,36 +40,36 @@ public class QueryController {
 			end = fillTablesService.stringToLocalDateTimeRequest(queryRequest.getEndDate());
 		}
 		if (queryRequest.getWord().equals("FirstQuery")) {
-			System.out.println("Query1");
-			System.out.println("------------");
-			System.out.println(queryRequest.getStartDate());
-			System.out.println(queryRequest.getEndDate());
-			System.out.println(queryRequest.getWord());
+//			System.out.println("Query1");
+//			System.out.println("------------");
+//			System.out.println(queryRequest.getStartDate());
+//			System.out.println(queryRequest.getEndDate());
+//			System.out.println(queryRequest.getWord());
 			//System.out.println(queryRequest.getType());
 			List<Object[]> list = fillTablesService.executeQuery1(start, end);
-			list.forEach(r -> System.out.println(Arrays.toString(r)));
+			//list.forEach(r -> System.out.println(Arrays.toString(r)));
 			return new ResponseEntity<>(list, HttpStatus.OK);
 		}
 		else if (queryRequest.getWord().equals("SecondQuery")) {
-			System.out.println("Query2");
-			System.out.println("------------");
-			System.out.println(queryRequest.getStartDate());
-			System.out.println(queryRequest.getEndDate());
-			System.out.println(queryRequest.getWord());
-			System.out.println(queryRequest.getType());
+//			System.out.println("Query2");
+//			System.out.println("------------");
+//			System.out.println(queryRequest.getStartDate());
+//			System.out.println(queryRequest.getEndDate());
+//			System.out.println(queryRequest.getWord());
+//			System.out.println(queryRequest.getType());
 			List<Object[]> list = fillTablesService.executeQuery2(start, end, queryRequest.getType());
-			list.forEach(r -> System.out.println(Arrays.toString(r)));
+			//list.forEach(r -> System.out.println(Arrays.toString(r)));
 			return new ResponseEntity<>(list, HttpStatus.OK);
 		}
 		else {
-			System.out.println("Query3");
-			System.out.println("------------");
-			System.out.println(queryRequest.getStartDate());
+			//System.out.println("Query3");
+			//System.out.println("------------");
+			//System.out.println(queryRequest.getStartDate());
 			//System.out.println(queryRequest.getEndDate());
-			System.out.println(queryRequest.getWord());
+			//System.out.println(queryRequest.getWord());
 			//System.out.println(queryRequest.getType());
 			List<Object[]> list = fillTablesService.executeQuery3(start);
-			list.forEach(r -> System.out.println(Arrays.toString(r)));
+			//list.forEach(r -> System.out.println(Arrays.toString(r)));
 			return new ResponseEntity<>(list, HttpStatus.OK);
 		}
 	}

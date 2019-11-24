@@ -31,19 +31,4 @@ public class Project1DbManagementSystemsApplication {
 //    };
 //  }
 
-  // @Bean
-  // public CommandLineRunner testDate(FillTablesService fillTablesService) {
-  // return args -> {
-  // LocalDateTime a = fillTablesService.stringToLocalDateTime("12/Dec/2015:18:31:25 +0100");
-  // System.out.println(a);
-  // };
-  // }
-  
-//   @Bean
-//   public CommandLineRunner testDate(FillTablesService fillTablesService) {
-//	   return args -> {
-//		   fillTablesService.executeQuery3();
-//	   };
-//   }
-
 }
